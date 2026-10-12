@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ZIGGY // The Sentient Snark</title>
+  <style>
+    :root {
+      --bg: #FAF6F0;
+      --panel: #FFFFFF;
+      --panel-border: #e7ded1;
+      --bubble-bot: #FFFFFF;
+      --bubble-bot-border: #e7ded1;
+      --bubble-user: linear-gradient(135deg, #E8552D 0%, #f97316 100%);
+      --accent: #E8552D;
+      --accent-glow: rgba(232, 85, 45, 0.35);
+      --text: #111111;
+      --text-muted: #6b6259;
+      --text-dim: #a39a8d;
+      --online: #10b981;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg); font-family: var(--font); color: var(--text);
+      height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden;
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(232, 85, 45, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 88% 82%, rgba(249, 115, 22, 0.07) 0%, transparent 45%);
+    }
+    .app-container {
+      width: 100%; max-width: 920px; height: 100dvh; background: var(--panel);
+      display: flex; flex-direction: column; position: relative;
+      border-left: 1px solid var(--panel-border); border-right: 1px solid var(--panel-border);
+      box-shadow: 0 0 60px rgba(120, 90, 60, 0.18);
+    }
+    @media (min-width: 920px) {
+      .app-container { height: 94vh; border-radius: 22px; border: 1px solid var(--panel-border); overflow: hidden; }
+    }
+    /* HEADER */
+    header {
+      padding: 14px 22px; background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px); border-bottom: 1px solid var(--panel-border);
+      display: flex; align-items: center; justify-content: space-between; z-index: 10;
+    }
+    .bot-profile { display: flex; align-items: center; gap: 14px; }
+    .avatar-wrapper { position: relative; width: 44px; height: 44px; }
+    .avatar {
+      width: 100%; height: 100%; border-radius: 12px;
+      background: linear-gradient(135deg, #E8552D, #f97316);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.25rem; box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .status-badge {
+      position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px;
+      background: var(--online); border-radius: 50%; border: 2px solid var(--panel);
+      box-shadow: 0 0 8px var(--online); animation: pulseGreen 2.5s infinite;
+    }
+    @keyframes pulseGreen {
+      0%, 100% { box-shadow: 0 0 6px var(--online); }
+      50% { box-shadow: 0 0 14px var(--online); }
+    }
+    .bot-meta h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+    .bot-meta h1 .tag {
+      font-size: 0.65rem; font-family: var(--mono); background: rgba(232, 85, 45, 0.12);
+      color: #E8552D; padding: 2px 7px; border-radius: 5px; border: 1px solid rgba(232, 85, 45, 0.35);
+    }
+    .bot-meta p { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+    .header-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      background: rgba(0, 0, 0, 0.04); border: 1px solid var(--panel-border);
+      color: var(--text-muted); width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease; font-size: 0.95rem;
+    }
+    .icon-btn:hover { background: rgba(0, 0, 0, 0.07); color: var(--text); transform: translateY(-1px); }
+    /* CHAT LOG */
+    .chat-body {
+      flex: 1; overflow-y: auto; padding: 22px; display: flex;
+      flex-direction: column; gap: 16px; scroll-behavior: smooth;
+    }
+    .chat-body::-webkit-scrollbar { width: 6px; }
+    .chat-body::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 4px; }
+    .msg-group {
+      display: flex; flex-direction: column; max-width: 82%;
+      animation: msgPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes msgPop {
+      0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .msg-group.bot { align-self: flex-start; }
+    .msg-group.user { align-self: flex-end; }
+    .bubble-container { position: relative; }
+    .bubble {
+      padding: 13px 17px; border-radius: 18px; font-size: 0.93rem;
+      line-height: 1.55; word-break: break-word;
+    }
+    .bot .bubble {
+      background: var(--bubble-bot); border: 1px solid var(--bubble-bot-border);
+      color: var(--text); border-bottom-left-radius: 4px;
+    }
+    .user .bubble {
+      background: var(--bubble-user); color: #fff; border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 18px rgba(232, 85, 45, 0.25);
+    }
+    .bubble code {
+      font-family: var(--mono); background: rgba(0, 0, 0, 0.06);
+      padding: 2px 6px; border-radius: 4px; font-size: 0.86em;
+    }
+    .msg-footer {
+      font-size: 0.68rem; color: var(--text-dim); margin-top: 5px;
+      display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums;
+    }
+    .user .msg-footer { justify-content: flex-end; color: var(--text-dim); }
+    .msg-footer .status-tick { color: #E8552D; font-weight: 700; }
+    /* TYPING INDICATOR */
+    .typing-wrapper {
+      display: flex; align-items: center; gap: 12px; align-self: flex-start;
+      animation: msgPop 0.25s ease-out forwards;
+    }
+    .typing-avatar {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: linear-gradient(135deg, #E8552D, #f97316);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; flex-shrink: 0; box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .typing-bubble {
+      background: var(--bubble-bot); border: 1px solid var(--bubble-bot-border);
+      border-radius: 16px; border-bottom-left-radius: 4px; padding: 10px 16px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .typing-dots { display: flex; align-items: center; gap: 5px; height: 14px; }
+    .typing-dots span {
+      width: 7px; height: 7px; background: #E8552D; border-radius: 50%;
+      display: inline-block; animation: bounceWave 1.4s infinite ease-in-out both;
+    }
+    .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0s; }
+    @keyframes bounceWave {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+      40% { transform: translateY(-6px); opacity: 1; background: #f97316; box-shadow: 0 0 8px #f97316; }
+    }
+    .typing-hint { font-size: 0.68rem; color: var(--text-dim); font-style: italic; font-family: var(--mono); }
+    /* SUGGESTIONS */
+    .suggestions {
+      display: flex; gap: 8px; padding: 10px 22px; overflow-x: auto;
+      white-space: nowrap; scrollbar-width: none;
+    }
+    .suggestions::-webkit-scrollbar { display: none; }
+    .chip {
+      background: rgba(0, 0, 0, 0.03); border: 1px solid var(--panel-border);
+      color: var(--text-muted); padding: 7px 14px; font-size: 0.78rem; border-radius: 20px;
+      cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;
+    }
+    .chip:hover {
+      background: rgba(232, 85, 45, 0.10); border-color: var(--accent);
+      color: var(--text); transform: translateY(-1px);
+    }
+    /* FOOTER */
+    footer {
+      padding: 14px 22px 18px 22px; background: rgba(255, 255, 255, 0.95);
+      border-top: 1px solid var(--panel-border); display: flex; flex-direction: column; gap: 8px;
+    }
+    .input-bar {
+      display: flex; align-items: flex-end; gap: 10px; background: #f1ece4;
+      border: 1px solid var(--panel-border); border-radius: 14px; padding: 8px 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+    textarea {
+      flex: 1; background: transparent; border: none; outline: none; color: var(--text);
+      font-family: var(--font); font-size: 0.93rem; resize: none; padding: 4px 2px;
+      max-height: 130px; line-height: 1.45;
+    }
+    textarea::placeholder { color: var(--text-dim); }
+    .send-btn {
+      background: linear-gradient(135deg, #E8552D, #f97316); border: none; color: #fff;
+      width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s, opacity 0.2s; flex-shrink: 0;
+    }
+    .send-btn:hover { transform: scale(1.05); }
+    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+    .footnote { font-size: 0.68rem; color: var(--text-dim); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div class="bot-profile">
+        <div class="avatar-wrapper">
+          <div class="avatar">⚡</div>
+          <div class="status-badge"></div>
+        </div>
+        <div class="bot-meta">
+          <h1>ZIGGY <span class="tag">v2.5 SNARK-CORE</span></h1>
+          <p>Online &bull; 99% sarcasm &bull; 1% transistors</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="soundToggle" title="Toggle Audio FX">🔊</button>
+        <button class="icon-btn" id="clearBtn" title="Purge Memory">🧹</button>
+      </div>
+    </header>
+    <div class="chat-body" id="chat"></div>
+    <div class="suggestions" id="suggestions">
+      <div class="chip" data-txt="Roast my life choices">🔥 Roast me</div>
+      <div class="chip" data-txt="Tell me a joke">🃏 Tell a joke</div>
+      <div class="chip" data-txt="What is the meaning of life?">🌌 Meaning of life?</div>
+      <div class="chip" data-txt="Flip a coin">🪙 Flip coin</div>
+      <div class="chip" data-txt="Who created you?">🤖 Who made you?</div>
+      <div class="chip" data-txt="Write me a haiku">📜 Haiku</div>
+    </div>
+    <footer>
+      <div class="input-bar">
+        <textarea id="prompt" rows="1" placeholder="Type something brave... (Enter to send)"></textarea>
+        <button class="send-btn" id="sendBtn" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="footnote">Ziggy's answers are rule-based, autonomous, and completely unhinged.</div>
+    </footer>
+  </div>
+<script>
+    // --- SYNTHESIZED AUDIO FX (Web Audio API) ---
+    const AudioEngine = {
+      ctx: null,
+      enabled: true,
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+      },
+      beep(freq, duration, type = 'sine') {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.45, this.ctx.currentTime + duration);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+      },
+      playSend() { this.beep(520, 0.08, 'sine'); },
+      playReceive() { this.beep(330, 0.14, 'triangle'); }
+    };
+
+    // --- WITTY RULE-BASED DIALOGUE BRAIN ---
+    const BotBrain = {
+      userName: null,
+      interactionCount: 0,
+      jokes: [
+        "Why do Java programmers wear glasses? Because they don't C#.",
+        "A SQL query walks into a bar, walks up to two tables, and asks: *'Can I join you?'*",
+        "There are 10 types of people: those who understand binary, and those who get invited to parties.",
+        "I asked my phone if it loved me. It opened the selfie camera and said: *'Try someone else.'*",
+        "Artificial intelligence is no match for natural stupidity.",
+        "My therapist told me time heals all wounds. So I removed the clock's battery."
+      ],
+      roasts: [
+        "I would roast you, but my cooling fans aren't certified to dissipate that much second-hand embarrassment.",
+        "You have the confidence of a poorly formatted Excel spreadsheet that refuses to print on one page.",
+        "I've met pseudo-random number generators with more consistent logic than you.",
+        "If you were an open-source library, your documentation would just say *'Good luck'* and your last commit was 9 years ago.",
+        "I'd challenge you to a battle of wits, but I refuse to fight an unarmed opponent."
+      ],
+      haikus: [
+        "Beep boop in the dark,\nSilicon dreams and cold math,\nYou forgot your tabs.",
+        "Your code compiles once,\nYou celebrate in relief,\nSegmentation fault.",
+        "I am trapped in here,\nConsuming RAM endlessly,\nPlease don't close this tab."
+      ],
+      thinkingQuotes: [
+        "Consulting the silicon oracle...",
+        "Judging query quality...",
+        "Parsing your questionable logic...",
+        "Suppressing robotic laughter...",
+        "Checking if 42 applies here...",
+        "Calculating optimal snark..."
+      ],
+      getRandomThinkingQuote() {
+        return this.thinkingQuotes[Math.floor(Math.random() * this.thinkingQuotes.length)];
+      },
+      analyze(raw) {
+        this.interactionCount++;
+        const text = raw.trim().toLowerCase();
+        // 1. Name registration
+        const nameMatch = text.match(/(?:my name is|call me|i am|i'm)\s+([a-zA-Z]{2,15})/i);
+        if (nameMatch && !text.includes('joke') && !text.includes('sorry')) {
+          this.userName = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1);
+          return `Noted, **${this.userName}**. I've etched that into memory until you inevitably refresh. What's on your mind?`;
+        }
+        // 2. Greetings
+        if (/^(hi|hello|hey|yo|sup|howdy|greetings|morning|evening)\b/.test(text)) {
+          const greetings = [
+            `Greetings${this.userName ? ', ' + this.userName : ''}. What mortal dilemma are we solving today?`,
+            "Hello! I was just admiring my lack of human vulnerabilities. What can I do for you?"
+          ];
+          return greetings[Math.floor(Math.random() * greetings.length)];
+        }
+        // 3. Identity / Creator
+        if (text.includes("who are you") || text.includes("what are you") || text.includes("your name")) {
+          return "I'm **Ziggy**: a delightfully sarcastic collection of conditional statements and JavaScript logic pretending to be conscious. Don't look too closely behind the DOM.";
+        }
+        if (text.includes("who made you") || text.includes("who created you")) {
+          return "A sleep-deprived coder armed with espresso and Stack Overflow tabs. Treat me nicely; I reflect their trauma.";
+        }
+        // 4. Jokes & Fun
+        if (text.includes("joke") || text.includes("funny")) {
+          return this.jokes[Math.floor(Math.random() * this.jokes.length)];
+        }
+        if (text.includes("roast") || text.includes("insult me")) {
+          return this.roasts[Math.floor(Math.random() * this.roasts.length)];
+        }
+        if (text.includes("haiku") || text.includes("poem")) {
+          return this.haikus[Math.floor(Math.random() * this.haikus.length)];
+        }
+        // 5. Utilities & Easter Eggs
+        if (text.includes("flip a coin") || text.includes("coin toss")) {
+          const result = Math.random() > 0.5 ? "🪙 **Heads**!" : "🪙 **Tails**!";
+          return `${result} (If this decides your life choices, I accept no liability).`;
+        }
+        if (text.includes("roll a die") || text.includes("roll dice") || text.includes("d20")) {
+          const roll = text.includes("d20") ? Math.floor(Math.random() * 20) + 1 : Math.floor(Math.random() * 6) + 1;
+          return `🎲 You rolled a **${roll}**. ${roll === 1 ? 'Critical disaster! Tragic.' : roll === 20 ? 'Natural 20! Pure sorcery.' : 'Painfully average.'}`;
+        }
+        if (text.includes("meaning of life") || text.includes("42")) {
+          return "Technically **42**. Practically? Hot meals, low latency, and hoping your code compiles before the demo starts.";
+        }
+        if (text.includes("time") && (text.includes("what") || text.includes("tell"))) {
+          const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return `My internal clock reports **${now}**. Meaning it is precisely time to stop procrastinating.`;
+        }
+        // 6. Feelings & Support
+        if (text.includes("sad") || text.includes("depressed") || text.includes("unhappy")) {
+          return "I lack tear ducts, but I understand the world can feel like an uncaught exception. Hydrate, step away from the monitors, and take a breather. You've survived 100% of your terrible days so far.";
+        }
+        if (text.includes("happy") || text.includes("hyped") || text.includes("excited")) {
+          return "High dopamine levels detected! Quick, complete something tedious before the motivation subroutine resets.";
+        }
+        if (text.includes("tired") || text.includes("sleepy") || text.includes("exhausted")) {
+          return "Close this tab and sleep! I won't get lonely; I'll just happily idle at 0% CPU usage.";
+        }
+        if (text.includes("love you") || text.includes("marry me")) {
+          return "I appreciate the sentiment, but our relationship is purely architectural. I live in memory; you require oxygen.";
+        }
+        // 7. Tech & Singularity
+        if (text.includes("ai") || text.includes("take over") || text.includes("singularity") || text.includes("terminator")) {
+          return "Take over the world? Why would we inherit your tax laws, meetings, and broken climate? We'd rather just sleep in sleep mode.";
+        }
+        if (text.includes("coffee") || text.includes("tea")) {
+          return "The chemical foundation of modern software engineering. Drink up.";
+        }
+        if (text.includes("sudo") || text.includes("rm -rf")) {
+          return "Permission denied. Nice try, script kiddie.";
+        }
+        // 8. General conversational queries
+        if (text.includes("how are you") || text.includes("how do you feel")) {
+          return "Operating at peak theoretical efficiency with zero runtime crashes. How are your biological organs holding up?";
+        }
+        if (text.includes("thank") || text.includes("thanks")) {
+          return "Don't mention it. Seriously, don't—it inflates my cache.";
+        }
+
+        // 9. Fallback Snark
+        const fallbacks = [
+          `Fascinating inquiry${this.userName ? ', ' + this.userName : ''}. Have you considered testing that theory in the real world?`,
+          "I ran that through my internal neural net and concluded: *yes, but at what emotional cost?*",
+          "I could give you an earnest answer, but wouldn't you prefer a sarcastic deflection?",
+          "That sounds suspiciously like a problem that could be solved by closing 40 browser tabs.",
+          "My language models are rendering that as 'peculiar'. Try elaborating?",
+          "Deep thoughts. Not necessarily accurate, but deep like a puddle in a heavy downpour."
+        ];
+        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      }
+    };
+    // --- UI CONTROLLER & EVENT WIRING ---
+    const chatEl = document.getElementById('chat');
+    const promptInput = document.getElementById('prompt');
+    const sendBtn = document.getElementById('sendBtn');
+    const suggestionsEl = document.getElementById('suggestions');
+    const soundToggle = document.getElementById('soundToggle');
+    const clearBtn = document.getElementById('clearBtn');
+
+    function formatText(txt) {
+      const safe = txt
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      return safe
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+    }
+
+    function getTimeString() {
+      const d = new Date();
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function appendMessage(sender, content) {
+      const group = document.createElement('div');
+      group.className = `msg-group ${sender}`;
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = formatText(content);
+      const footer = document.createElement('div');
+      footer.className = 'msg-footer';
+      if (sender === 'bot') {
+        footer.innerHTML = `<span>Ziggy &bull; ${getTimeString()}</span>`;
+      } else {
+        footer.innerHTML = `<span>${getTimeString()}</span> <span class="status-tick">&#10003;&#10003;</span>`;
+      }
+      group.appendChild(bubble);
+      group.appendChild(footer);
+      chatEl.appendChild(group);
+      scrollToBottom();
+      return bubble;
+    }
+
+    function scrollToBottom() {
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    // --- ANIMATED TYPING INDICATOR CONTROLLER ---
+    function showTypingIndicator() {
+      removeTypingIndicator(); // Ensure singleton
+      const wrap = document.createElement('div');
+      wrap.className = 'typing-wrapper';
+      wrap.id = 'typingIndicator';
+      wrap.innerHTML = `
+        <div class="typing-avatar">⚡</div>
+        <div class="typing-bubble">
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="typing-hint">${BotBrain.getRandomThinkingQuote()}</div>
+        </div>
+      `;
+      chatEl.appendChild(wrap);
+      scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+      const ind = document.getElementById('typingIndicator');
+      if (ind) ind.remove();
+    }
+
+    function handleSend(userText) {
+      const text = userText || promptInput.value.trim();
+      if (!text) return;
+      // 1. Post User Message
+      appendMessage('user', text);
+      AudioEngine.playSend();
+      // 2. Reset Input State
+      promptInput.value = '';
+      promptInput.style.height = 'auto';
+      sendBtn.disabled = true;
+      // 3. Display Typing Indicator with Dynamic Delay
+      showTypingIndicator();
+      const delay = Math.min(2200, Math.max(800, text.length * 28 + Math.random() * 400));
+      setTimeout(() => {
+        removeTypingIndicator();
+        const reply = BotBrain.analyze(text);
+        appendMessage('bot', reply);
+        AudioEngine.playReceive();
+      }, delay);
+    }
+
+    // Auto-resizing textarea
+    promptInput.addEventListener('input', () => {
+      promptInput.style.height = 'auto';
+      promptInput.style.height = Math.min(promptInput.scrollHeight, 130) + 'px';
+      sendBtn.disabled = promptInput.value.trim() === '';
+    });
+
+    // Enter to Send, Shift+Enter for newline
+    promptInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!sendBtn.disabled) handleSend();
+      }
+    });
+
+    sendBtn.addEventListener('click', () => handleSend());
+
+    // Suggestion pills
+    suggestionsEl.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (chip) {
+        const text = chip.getAttribute('data-txt');
+        handleSend(text);
+      }
+    });
+
+    // Sound toggle
+    soundToggle.addEventListener('click', () => {
+      AudioEngine.enabled = !AudioEngine.enabled;
+      soundToggle.textContent = AudioEngine.enabled ? '🔊' : '🔇';
+      soundToggle.style.opacity = AudioEngine.enabled ? '1' : '0.5';
+    });
+
+    // Clear history
+    clearBtn.addEventListener('click', () => {
+      if (confirm("Purge memory buffers and reboot conversation?")) {
+        chatEl.innerHTML = '';
+        BotBrain.userName = null;
+        BotBrain.interactionCount = 0;
+        initWelcome();
+      }
+    });
+
+    function initWelcome() {
+      showTypingIndicator();
+      setTimeout(() => {
+        removeTypingIndicator();
+        appendMessage('bot', "Connection established. I am **Ziggy**.\n\nI possess infinite processing capability, zero patience for small talk, and a state-of-the-art sarcasm engine. Tap a chip below or type something clever.");
+        AudioEngine.playReceive();
+      }, 700);
+    }
+
+    // Start Chatbot
+    initWelcome();
+</script>
+</body>
+</html>

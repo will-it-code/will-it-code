@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1080px; height:1920px; background:#0d1117; color:#e6edf3;
+         font-family:'DejaVu Sans Mono',monospace; overflow:hidden; }
+  .scene { width:1080px; height:1920px; display:none; flex-direction:column; }
+  .scene.on { display:flex; }
+  .header { padding:64px 56px 34px; border-bottom:2px solid #30363d; }
+  .header h1 { font-size:64px; color:#58a6ff; }
+  .header p { font-size:38px; color:#8b949e; margin-top:12px;
+              font-family:'DejaVu Sans',sans-serif; }
+  .tag { display:inline-block; font-size:32px; color:#0d1117; background:#f0b429;
+         font-family:'DejaVu Sans',sans-serif; font-weight:bold;
+         padding:10px 26px; border-radius:14px; margin-top:18px; }
+  #editor { flex:1; padding:60px 56px; font-size:46px; line-height:1.9;
+            white-space:pre-wrap; overflow:hidden; }
+  .cm { color:#8b949e; }
+  #cursor { display:inline-block; width:22px; height:54px; background:#58a6ff;
+            vertical-align:-8px; animation:blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  #msgs { flex:1; padding:60px 56px 30px; display:flex; flex-direction:column;
+          gap:40px; justify-content:center; font-size:44px; line-height:1.45;
+          font-family:'DejaVu Sans',sans-serif; }
+  .q { align-self:flex-end; background:#1f6feb; color:#fff; padding:28px 40px;
+       border-radius:34px 34px 8px 34px; max-width:92%; }
+  .a { align-self:flex-start; background:#30363d; color:#e6edf3; padding:28px 40px;
+       border-radius:34px 34px 34px 8px; max-width:92%; font-weight:bold; }
+  #chatinput { margin:0 56px 44px; background:#0d1117; border:3px solid #30363d;
+               border-radius:44px; color:#e6edf3; font-size:42px; padding:30px 46px;
+               font-family:'DejaVu Sans Mono',monospace; }
+  .footer { text-align:center; padding:0 0 60px; font-size:34px; color:#8b949e;
+            font-family:'DejaVu Sans',sans-serif; }
+</style>
+</head>
+<body>
+  <div class="scene on" id="scene-code">
+    <div class="header"><h1>bot.js</h1>
+      <p>the entire brain &mdash; zero AI, just keyword rules</p>
+      <span class="tag">PART 1 OF 3 &middot; THE DUMB CHATBOT</span></div>
+    <div id="editor"><span class="cm">// BrainBot's whole "mind", typed live:</span>
+<span id="typetarget"></span><span id="cursor"></span></div>
+    <div class="footer">real code &middot; every keystroke genuine</div>
+  </div>
+
+  <div class="scene" id="scene-chat">
+    <div class="header"><h1>live test</h1>
+      <p>five trick questions &middot; zero mercy</p>
+      <span class="tag">REAL RUN &middot; NO MOCKS</span></div>
+    <div id="msgs"></div>
+    <input id="chatinput" placeholder="ask it anything...">
+    <div class="footer">watch it fail in real time</div>
+  </div>
+
+<script>
+  const brain = [
+    [/color/i,    "Red"],
+    [/alphabet/i, "26"],
+    [/apple/i, q => {
+      const n = q.match(/\d+/g).map(Number);
+      return String(n[0] - n[1]);
+    }],
+    [/iphone/i,   "2005"],
+    [/\bhi\b/i,   "Hello. Definitely real intelligence."],
+    [/your name/i,"I'm BrainBot. Beep."],
+  ];
+  function respond(q){
+    for (const [re, a] of brain)
+      if (re.test(q)) return typeof a === "function" ? a(q) : a;
+    return "Processing... I have no idea.";
+  }
+  const msgs = document.getElementById('msgs');
+  function addMsg(text, cls){
+    const d = document.createElement('div');
+    d.className = cls; d.textContent = text;
+    msgs.appendChild(d);
+    while (msgs.children.length > 2) msgs.removeChild(msgs.firstChild);
+  }
+  window.__ask = q => { addMsg(q,'q'); setTimeout(()=>addMsg(respond(q),'a'), 900); };
+  window.__show = id => {
+    document.querySelectorAll('.scene').forEach(s => s.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+  };
+  // exposed for the test harness:
+  window.__respond = respond;
+</script>
+</body>
+</html>
