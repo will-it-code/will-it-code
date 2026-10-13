@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trick Question Quiz</title>
+  <style>
+    :root {
+      --bg: #FAF6F0;
+      --card-bg: #FFFFFF;
+      --text-main: #111111;
+      --text-muted: #6B6864;
+      --accent: #E8552D;
+      --accent-hover: #D2441D;
+      --accent-light: #FCEEE9;
+      --border: #E8E3DC;
+      --success: #1E8E3E;
+      --success-bg: #E6F4EA;
+      --danger: #D93025;
+      --danger-bg: #FCE8E6;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(17, 17, 17, 0.04), 0 2px 6px rgba(17, 17, 17, 0.02);
+      padding: 36px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Header Bar */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .tag {
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .score-counter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-value {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    /* Typography */
+    h1 {
+      font-size: 1.85rem;
+      line-height: 1.25;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      color: var(--text-main);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .question-title {
+      font-size: 1.28rem;
+      line-height: 1.4;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text-main);
+    }
+
+    /* Options Stack */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .option-btn {
+      width: 100%;
+      text-align: left;
+      padding: 16px 20px;
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background-color: #FFFDFB;
+      transform: translateY(-1px);
+    }
+
+    .option-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-btn.correct {
+      background: var(--success-bg) !important;
+      border-color: var(--success) !important;
+      color: var(--success) !important;
+    }
+
+    .option-btn.wrong {
+      background: var(--danger-bg) !important;
+      border-color: var(--danger) !important;
+      color: var(--danger) !important;
+    }
+
+    /* Explanation Box */
+    .feedback-box {
+      margin-top: 4px;
+      margin-bottom: 24px;
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      line-height: 1.45;
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .feedback-box.show {
+      display: block;
+    }
+
+    .feedback-box.correct {
+      background: var(--success-bg);
+      color: #0F5B24;
+      border-left: 4px solid var(--success);
+    }
+
+    .feedback-box.wrong {
+      background: var(--danger-bg);
+      color: #931911;
+      border-left: 4px solid var(--danger);
+    }
+
+    /* Buttons */
+    .primary-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 16px 24px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .primary-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .primary-btn:active {
+      transform: scale(0.99);
+    }
+
+    /* Results */
+    .result-score-large {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+      margin: 12px 0;
+    }
+
+    .verdict-badge {
+      display: inline-block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--accent-light);
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .verdict-desc {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    .screens {
+      position: relative;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="card">
+      
+      <!-- START SCREEN -->
+      <section id="screen-start" class="screen active">
+        <span class="tag">Edge Case Detector v1.0</span>
+        <h1 style="margin-top: 14px;">TRICK QUESTION QUIZ</h1>
+        <p class="subtitle">
+          5 deceptively simple questions calibrated to test if your brain compiles cleanly or fails on obvious logic traps. Read carefully.
+        </p>
+        <button id="start-btn" class="primary-btn">Initialize Quiz &rarr;</button>
+      </section>
+
+      <!-- QUIZ SCREEN -->
+      <section id="screen-quiz" class="screen">
+        <div class="header-bar">
+          <span id="progress-indicator">Question 1 of 5</span>
+          <div class="score-counter">
+            <span>Score:</span>
+            <span id="running-score" class="score-value">0</span>
+          </div>
+        </div>
+
+        <h2 id="question-text" class="question-title"></h2>
+
+        <div id="options-container" class="options-grid"></div>
+
+        <div id="feedback-box" class="feedback-box">
+          <strong id="feedback-status" style="display:block; margin-bottom:4px;"></strong>
+          <span id="feedback-note"></span>
+        </div>
+
+        <button id="next-btn" class="primary-btn" style="display: none;">Next Question &rarr;</button>
+      </section>
+
+      <!-- RESULTS SCREEN -->
+      <section id="screen-results" class="screen">
+        <span class="tag">Execution Complete</span>
+        <h1 style="margin-top: 14px;">Final Inspection</h1>
+        <div id="final-score" class="result-score-large">0/5</div>
+        <div id="verdict-tag" class="verdict-badge">Analysis Pending</div>
+        <p id="verdict-text" class="verdict-desc"></p>
+        <button id="restart-btn" class="primary-btn">&#x21bb; Run It Again</button>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    const quizData = [
+      {
+        q: "What color is a blueberry?",
+        options: ["Red", "Blue", "Purple", "Green"],
+        correct: "Blue",
+        note: "Don't over-engineer it. Yes, they have indigo flesh inside, but blueberries are literally blue."
+      },
+      {
+        q: 'How many letters are in the phrase "the alphabet"?',
+        options: ["10", "11", "12", "13"],
+        correct: "11",
+        note: "t-h-e (3) + a-l-p-h-a-b-e-t (8) = 11 total characters. The space is not a letter!"
+      },
+      {
+        q: "You have 3 apples. You take 2 away. How many apples do YOU have?",
+        options: ["3", "2", "1", "0"],
+        correct: "2",
+        note: "You took 2 apples with you, so you have 2. The remaining 1 is left behind."
+      },
+      {
+        q: "Which of these is NOT red?",
+        options: ["Crimson", "Scarlet", "Blue", "Maroon"],
+        correct: "Blue",
+        note: "Zero hexadecimal trickery here: #0000FF is definitively blue, not red."
+      },
+      {
+        q: "What year did the first iPhone come out?",
+        options: ["2005", "2006", "2007", "2008"],
+        correct: "2007",
+        note: "Steve Jobs introduced it on January 9, 2007, changing UI workflows forever."
+      }
+    ];
+
+    let currentIndex = 0;
+    let score = 0;
+    let hasAnswered = false;
+
+    // Elements
+    const startScreen = document.getElementById("screen-start");
+    const quizScreen = document.getElementById("screen-quiz");
+    const resultsScreen = document.getElementById("screen-results");
+
+    const startBtn = document.getElementById("start-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const restartBtn = document.getElementById("restart-btn");
+
+    const progressIndicator = document.getElementById("progress-indicator");
+    const runningScore = document.getElementById("running-score");
+    const questionText = document.getElementById("question-text");
+    const optionsContainer = document.getElementById("options-container");
+    const feedbackBox = document.getElementById("feedback-box");
+    const feedbackStatus = document.getElementById("feedback-status");
+    const feedbackNote = document.getElementById("feedback-note");
+
+    const finalScore = document.getElementById("final-score");
+    const verdictTag = document.getElementById("verdict-tag");
+    const verdictText = document.getElementById("verdict-text");
+
+    // Shuffle Array Utility
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function switchScreen(activeScreen) {
+      [startScreen, quizScreen, resultsScreen].forEach(s => s.classList.remove("active"));
+      activeScreen.classList.add("active");
+    }
+
+    function startQuiz() {
+      currentIndex = 0;
+      score = 0;
+      runningScore.textContent = score;
+      switchScreen(quizScreen);
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      hasAnswered = false;
+      const current = quizData[currentIndex];
+
+      progressIndicator.textContent = `Question ${currentIndex + 1} of ${quizData.length}`;
+      questionText.textContent = current.q;
+      feedbackBox.className = "feedback-box";
+      feedbackBox.style.display = "none";
+      nextBtn.style.display = "none";
+      optionsContainer.innerHTML = "";
+
+      const shuffledOptions = shuffle(current.options);
+
+      shuffledOptions.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = opt;
+        btn.onclick = () => handleSelectOption(btn, opt, current);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function handleSelectOption(selectedBtn, selectedValue, currentQuestion) {
+      if (hasAnswered) return;
+      hasAnswered = true;
+
+      const isCorrect = selectedValue === currentQuestion.correct;
+      const buttons = optionsContainer.querySelectorAll(".option-btn");
+
+      // Lock buttons & display states
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === currentQuestion.correct) {
+          btn.classList.add("correct");
+        }
+      });
+
+      if (isCorrect) {
+        score++;
+        runningScore.textContent = score;
+        feedbackBox.className = "feedback-box correct show";
+        feedbackStatus.textContent = "Status 200: Correct!";
+      } else {
+        selectedBtn.classList.add("wrong");
+        feedbackBox.className = "feedback-box wrong show";
+        feedbackStatus.textContent = "Status 400: Syntax Error!";
+      }
+
+      feedbackNote.textContent = currentQuestion.note;
+      feedbackBox.style.display = "block"; // show the feedback (inline none from renderQuestion would hide it)
+      nextBtn.style.display = "inline-flex";
+      nextBtn.textContent = (currentIndex === quizData.length - 1) ? "View Final Report \u2192" : "Next Question \u2192";
+    }
+
+    function handleNext() {
+      if (currentIndex < quizData.length - 1) {
+        currentIndex++;
+        loadQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      switchScreen(resultsScreen);
+      finalScore.textContent = `${score}/${quizData.length}`;
+
+      if (score === 5) {
+        verdictTag.textContent = "100% Test Coverage";
+        verdictText.textContent = "Zero logic bugs detected. You dodged every single trap like a veteran senior engineer. Flawless execution!";
+      } else if (score >= 3) {
+        verdictTag.textContent = "LGTM With Minor Comments";
+        verdictText.textContent = "Solid run! You caught most tricks, though an edge case or off-by-one error snuck past your code review.";
+      } else if (score >= 1) {
+        verdictTag.textContent = "Runtime Warning";
+        verdictText.textContent = "Overthought the obvious and underthought the traps. Time to fire up the debugger and step through again.";
+      } else {
+        verdictTag.textContent = "Total System Crash";
+        verdictText.textContent = "0/5! Did you click with your monitor turned off? Refactor your focus and give it another build.";
+      }
+    }
+
+    // Listeners
+    startBtn.addEventListener("click", startQuiz);
+    nextBtn.addEventListener("click", handleNext);
+    restartBtn.addEventListener("click", startQuiz);
+  </script>
+</body>
+</html>
