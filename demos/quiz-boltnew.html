@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trick Question Quiz</title>
+<style>
+  :root {
+    --bg: #FAF6F0;
+    --card: #ffffff;
+    --text: #111111;
+    --muted: #6b6358;
+    --accent: #E8552D;
+    --accent-soft: #fde7df;
+    --success: #2e7d5b;
+    --success-soft: #e1f3ea;
+    --error: #c0392b;
+    --error-soft: #fdecea;
+    --border: #e8e1d6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 2px 12px rgba(17, 17, 17, 0.06);
+    border: 1px solid var(--border);
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .header p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 999px;
+    margin: 0 14px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .score-pill {
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .question {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+  }
+
+  .option:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-1px);
+  }
+
+  .option:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .option:disabled {
+    cursor: default;
+  }
+
+  .option.correct {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--success);
+  }
+
+  .option.wrong {
+    border-color: var(--error);
+    background: var(--error-soft);
+    color: var(--error);
+  }
+
+  .reaction {
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: none;
+    animation: pop 0.3s ease;
+  }
+
+  .reaction.show { display: block; }
+
+  .reaction.correct-msg {
+    background: var(--success-soft);
+    color: var(--success);
+    border: 1px solid #bfe3d0;
+  }
+
+  .reaction.wrong-msg {
+    background: var(--error-soft);
+    color: var(--error);
+    border: 1px solid #f0c9c4;
+  }
+
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .next-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+    display: none;
+  }
+
+  .next-btn.show { display: block; }
+
+  .next-btn:hover { background: #d14a24; transform: translateY(-1px); }
+  .next-btn:active { transform: translateY(0); }
+
+  .result-screen {
+    text-align: center;
+    display: none;
+  }
+
+  .result-screen.show { display: block; }
+
+  .result-score {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+    margin: 12px 0 6px;
+  }
+
+  .result-total {
+    color: var(--muted);
+    font-size: 1rem;
+  }
+
+  .result-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-top: 22px;
+    margin-bottom: 10px;
+  }
+
+  .result-message {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .replay-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+  }
+
+  .replay-btn:hover { background: #d14a24; transform: translateY(-1px); }
+  .replay-btn:active { transform: translateY(0); }
+
+  @media (max-width: 380px) {
+    .card { padding: 24px 20px; }
+    .question { font-size: 1.1rem; }
+    .option { padding: 14px 16px; font-size: 0.98rem; }
+    .result-score { font-size: 2.8rem; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <div class="header">
+        <h1>Trick Question Quiz</h1>
+        <p>Think you're clever? Prove it.</p>
+      </div>
+
+      <div id="quiz-screen">
+        <div class="progress-row">
+          <span id="q-counter">1 / 5</span>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          <span class="score-pill" id="score-pill">0 pts</span>
+        </div>
+
+        <div class="question" id="question-text"></div>
+        <div class="options" id="options"></div>
+
+        <div class="reaction" id="reaction"></div>
+        <button class="next-btn" id="next-btn">Next Question</button>
+      </div>
+
+      <div class="result-screen" id="result-screen">
+        <div class="result-score" id="result-score">0</div>
+        <div class="result-total">out of 5</div>
+        <div class="result-title" id="result-title"></div>
+        <div class="result-message" id="result-message"></div>
+        <button class="replay-btn" id="replay-btn">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var questions = [
+    {
+      q: "What color is a blueberry?",
+      options: ["Purple", "Blue", "Red", "Green"],
+      correct: 1,
+      wrong: [
+        "It's literally in the name. BLUE-berry. Come on.",
+        "You had one job. The berry told you the answer.",
+        "Did you read the question or just vibe it?"
+      ]
+    },
+    {
+      q: "How many letters are in the phrase 'the alphabet'?",
+      options: ["26", "11", "10", "8"],
+      correct: 1,
+      wrong: [
+        "Classic. You counted the ALPHABET, not the phrase 'the alphabet'. Tricked!",
+        "The question said the PHRASE, not the whole alphabet. Sneaky, right?",
+        "You went for 26 didn't you? The oldest trick in the book."
+      ]
+    },
+    {
+      q: "I have one apple and you have one apple. How many apples do we have?",
+      options: ["Two", "One", "Zero", "Three"],
+      correct: 0,
+      wrong: [
+        "Nope! If I give you my apple, YOU have two and I have zero. We have none. Tricked!",
+        "Think about it — if you eat them, we have zero. But fine, take the L.",
+        "You said it too fast, didn't you? The apple trap got you."
+      ]
+    },
+    {
+      q: "It's definitely NOT red. What color is it?",
+      options: ["Red", "Blue", "Green", "Yellow"],
+      correct: 1,
+      wrong: [
+        "I literally said NOT red. And you picked red. Bold strategy.",
+        "The question told you what it ISN'T and you still chose that. Amazing.",
+        "Did you misread it or are you just being rebellious?"
+      ]
+    },
+    {
+      q: "Did the iPhone come out in 2005?",
+      options: ["Yes, 2005", "No — 2007", "No — 2006", "No — 2008"],
+      correct: 1,
+      wrong: [
+        "2005? Steve Jobs wasn't ready yet. It was 2007.",
+        "Close but no cigar — the iPhone launched in 2007, not 2005.",
+        "Nope. 2007. The original iPhone waited two more years to change everything."
+      ]
+    }
+  ];
+
+  var current = 0;
+  var score = 0;
+  var answered = false;
+
+  var qCounterEl = document.getElementById('q-counter');
+  var progressEl = document.getElementById('progress-fill');
+  var scoreEl = document.getElementById('score-pill');
+  var questionEl = document.getElementById('question-text');
+  var optionsEl = document.getElementById('options');
+  var reactionEl = document.getElementById('reaction');
+  var nextBtn = document.getElementById('next-btn');
+  var quizScreen = document.getElementById('quiz-screen');
+  var resultScreen = document.getElementById('result-screen');
+  var resultScore = document.getElementById('result-score');
+  var resultTitle = document.getElementById('result-title');
+  var resultMessage = document.getElementById('result-message');
+  var replayBtn = document.getElementById('replay-btn');
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
+
+  function renderQuestion() {
+    answered = false;
+    var item = questions[current];
+    qCounterEl.textContent = (current + 1) + ' / ' + questions.length;
+    progressEl.style.width = (current / questions.length * 100) + '%';
+    questionEl.textContent = item.q;
+    optionsEl.innerHTML = '';
+    reactionEl.className = 'reaction';
+    reactionEl.textContent = '';
+    nextBtn.classList.remove('show');
+    for (var i = 0; i < item.options.length; i++) {
+      (function (idx) {
+        var btn = document.createElement('button');
+        btn.className = 'option';
+        btn.textContent = item.options[idx];
+        btn.addEventListener('click', function () { selectAnswer(idx, btn); });
+        optionsEl.appendChild(btn);
+      })(i);
+    }
+  }
+
+  function selectAnswer(idx, btn) {
+    if (answered) return;
+    answered = true;
+    var item = questions[current];
+    var isCorrect = idx === item.correct;
+    var buttons = optionsEl.querySelectorAll('.option');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].disabled = true;
+      if (i === item.correct) buttons[i].classList.add('correct');
+    }
+    if (!isCorrect) btn.classList.add('wrong');
+
+    if (isCorrect) {
+      score++;
+      scoreEl.textContent = score + ' pt' + (score === 1 ? '' : 's');
+      reactionEl.className = 'reaction show correct-msg';
+      reactionEl.textContent = pickRandom([
+        "Nailed it! Okay, you're actually paying attention.",
+        "Correct! Maybe you're not so easily fooled.",
+        "Yep! One point for you, zero for the trick."
+      ]);
+    } else {
+      reactionEl.className = 'reaction show wrong-msg';
+      reactionEl.textContent = pickRandom(item.wrong);
+    }
+
+    nextBtn.classList.add('show');
+  }
+
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function showResults() {
+    quizScreen.style.display = 'none';
+    resultScreen.classList.add('show');
+    resultScore.textContent = score;
+
+    var title, message;
+    if (score === 5) {
+      title = "Flawless Victory!";
+      message = "5 out of 5. You saw through every single trick. Are you a wizard?";
+    } else if (score === 4) {
+      title = "Almost Perfect";
+      message = "4 out of 5. One trick slipped past you, but that's still impressive.";
+    } else if (score === 3) {
+      title = "Not Bad!";
+      message = "3 out of 5. You got got a couple times, but you held your own.";
+    } else if (score === 2) {
+      title = "Yikes...";
+      message = "2 out of 5. The tricks are winning. Want a rematch?";
+    } else if (score === 1) {
+      title = "Oof.";
+      message = "1 out of 5. At least you got one. That's... something.";
+    } else {
+      title = "Total Trick Disaster";
+      message = "0 out of 5. You fell for every single one. The quiz is undefeated.";
+    }
+
+    resultTitle.textContent = title;
+    resultMessage.textContent = message;
+  }
+
+  nextBtn.addEventListener('click', function () {
+    if (!answered) return;
+    current++;
+    if (current >= questions.length) {
+      progressEl.style.width = '100%';
+      showResults();
+    } else {
+      renderQuestion();
+    }
+  });
+
+  replayBtn.addEventListener('click', function () {
+    current = 0;
+    score = 0;
+    resultScreen.classList.remove('show');
+    quizScreen.style.display = 'block';
+    renderQuestion();
+  });
+
+  renderQuestion();
+})();
+</script>
+</body>
+</html>
