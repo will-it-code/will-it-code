@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rock Paper Scissors</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --paper: #FAF6F0; --card: #ffffff; --ink: #111111; --accent: #E8552D;
+  --muted: #8a8178; --line: #e7e0d6; --win: #2e8b57; --lose: #c0392b;
+}
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Inter, Arial, sans-serif;
+  background: var(--paper); color: var(--ink);
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  padding: 48px 20px 64px;
+}
+h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); letter-spacing: -0.02em; margin-bottom: 6px; }
+.subtitle { color: var(--muted); font-size: 1rem; margin-bottom: 32px; }
+.subtitle b { color: var(--accent); font-weight: 700; }
+.scoreboard { display: flex; gap: 16px; margin-bottom: 28px; width: 100%; max-width: 520px; }
+.score-card { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+.score-card .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+.score-card .value { font-size: 2.4rem; font-weight: 800; line-height: 1; }
+.score-card.leading { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(232,85,45,0.15); }
+.score-card.computer .value { color: var(--accent); }
+.arena { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 520px; box-shadow: 0 4px 18px rgba(0,0,0,0.05); margin-bottom: 24px; }
+.choices { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.choice-btn { flex: 1 1 120px; max-width: 150px; background: var(--paper); border: 2px solid var(--line); border-radius: 16px; padding: 22px 10px; font-size: 1.1rem; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.choice-btn .icon { font-size: 2.6rem; line-height: 1; }
+.choice-btn:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 8px 18px rgba(232,85,45,0.18); }
+.choice-btn:active { transform: translateY(0); }
+.choice-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+.choice-btn.picked { border-color: var(--accent); background: #fff3ee; box-shadow: 0 0 0 3px rgba(232,85,45,0.18); }
+.result { margin-top: 24px; text-align: center; min-height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.hands { display: flex; align-items: center; justify-content: center; gap: 18px; font-size: 2.4rem; }
+.hands .side { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.hands .side small { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.hands .vs { color: var(--muted); font-weight: 800; font-size: 1.1rem; }
+.verdict { font-size: 1.25rem; font-weight: 800; margin-top: 4px; }
+.verdict.win { color: var(--win); } .verdict.lose { color: var(--lose); } .verdict.tie { color: var(--muted); }
+.hint { color: var(--muted); font-size: 0.95rem; }
+.banner { width: 100%; max-width: 520px; text-align: center; border-radius: 20px; padding: 28px 24px; margin-bottom: 24px; display: none; }
+.banner.show { display: block; animation: pop 0.35s ease; }
+.banner.win { background: var(--accent); color: #fff; } .banner.lose { background: var(--ink); color: #fff; }
+.banner .big { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+.banner .small { font-size: 0.95rem; opacity: 0.9; }
+.play-again { background: var(--ink); color: #fff; border: none; border-radius: 14px; padding: 14px 28px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.15s ease, background 0.15s ease; display: none; }
+.play-again.show { display: inline-block; } .play-again:hover { background: var(--accent); transform: translateY(-2px); }
+@keyframes pop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (max-width: 480px) { .scoreboard { gap: 10px; } .score-card { padding: 12px; } .choice-btn { padding: 16px 6px; } .choice-btn .icon { font-size: 2rem; } }
+</style>
+</head>
+<body>
+<h1>Rock Paper Scissors</h1>
+<p class="subtitle">First to <b>5</b> wins the match</p>
+<div class="banner" id="banner"><div class="big" id="bannerTitle"></div><div class="small" id="bannerSub"></div></div>
+<div class="scoreboard">
+<div class="score-card" id="playerCard"><div class="label">You</div><div class="value" id="playerScore">0</div></div>
+<div class="score-card computer" id="computerCard"><div class="label">Computer</div><div class="value" id="computerScore">0</div></div>
+</div>
+<div class="arena">
+<div class="choices" id="choices">
+<button class="choice-btn" data-choice="rock" type="button"><span class="icon">&#9994;</span><span>Rock</span></button>
+<button class="choice-btn" data-choice="paper" type="button"><span class="icon">&#9995;</span><span>Paper</span></button>
+<button class="choice-btn" data-choice="scissors" type="button"><span class="icon">&#9996;</span><span>Scissors</span></button>
+</div>
+<div class="result" id="result"><p class="hint">Make your move to start the match</p></div>
+</div>
+<button class="play-again" id="playAgain" type="button">Play Again</button>
+<script>
+const CHOICES = ['rock', 'paper', 'scissors'];
+const ICONS = { rock: '\u270A', paper: '\u270B', scissors: '\u270C' };
+const LABELS = { rock: 'Rock', paper: 'Paper', scissors: 'Scissors' };
+const BEATS = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+const TARGET = 5;
+const state = { player: 0, computer: 0, locked: false };
+const els = {
+  choices: document.getElementById('choices'),
+  result: document.getElementById('result'),
+  playerScore: document.getElementById('playerScore'),
+  computerScore: document.getElementById('computerScore'),
+  playerCard: document.getElementById('playerCard'),
+  computerCard: document.getElementById('computerCard'),
+  banner: document.getElementById('banner'),
+  bannerTitle: document.getElementById('bannerTitle'),
+  bannerSub: document.getElementById('bannerSub'),
+  playAgain: document.getElementById('playAgain'),
+};
+function decide(p, c) { if (p === c) return 'tie'; return BEATS[p] === c ? 'win' : 'lose'; }
+function randomChoice() { return CHOICES[Math.floor(Math.random() * CHOICES.length)]; }
+function renderScores() {
+  els.playerScore.textContent = state.player; els.computerScore.textContent = state.computer;
+  els.playerCard.classList.toggle('leading', state.player > state.computer);
+  els.computerCard.classList.toggle('leading', state.computer > state.player);
+}
+function setLocked(locked) { state.locked = locked; els.choices.querySelectorAll('.choice-btn').forEach((b) => (b.disabled = locked)); }
+function showResult(player, computer, verdict) {
+  const verdictText = verdict === 'win' ? 'You win the round!' : verdict === 'lose' ? 'Computer wins the round' : "It's a tie!";
+  els.result.innerHTML = '<div class="hands"><div class="side"><span>' + ICONS[player] + '</span><small>You</small></div><span class="vs">vs</span><div class="side"><span>' + ICONS[computer] + '</span><small>CPU</small></div></div><div class="verdict ' + verdict + '">' + verdictText + '</div>';
+}
+function showBanner(winner) {
+  if (winner === 'player') { els.banner.className = 'banner show win'; els.bannerTitle.textContent = 'You won the match!'; }
+  else { els.banner.className = 'banner show lose'; els.bannerTitle.textContent = 'Computer wins the match'; }
+  els.bannerSub.textContent = 'Final score \u2014 You ' + state.player + ', Computer ' + state.computer;
+  els.playAgain.classList.add('show');
+}
+function play(playerChoice) {
+  if (state.locked) return;
+  const computerChoice = randomChoice(); const verdict = decide(playerChoice, computerChoice);
+  els.choices.querySelectorAll('.choice-btn').forEach((b) => { b.classList.toggle('picked', b.dataset.choice === playerChoice); });
+  if (verdict === 'win') state.player++; else if (verdict === 'lose') state.computer++;
+  showResult(playerChoice, computerChoice, verdict); renderScores();
+  if (state.player === TARGET || state.computer === TARGET) { setLocked(true); showBanner(state.player === TARGET ? 'player' : 'computer'); }
+}
+function reset() {
+  state.player = 0; state.computer = 0; state.locked = false;
+  els.banner.className = 'banner'; els.playAgain.classList.remove('show');
+  els.choices.querySelectorAll('.choice-btn').forEach((b) => { b.classList.remove('picked'); b.disabled = false; });
+  els.result.innerHTML = '<p class="hint">Make your move to start the match</p>';
+  renderScores();
+}
+els.choices.addEventListener('click', (e) => { const btn = e.target.closest('.choice-btn'); if (btn) play(btn.dataset.choice); });
+els.playAgain.addEventListener('click', reset);
+renderScores();
+</script>
+</body>
+</html>
